@@ -19,7 +19,7 @@
 namespace topo{
 
 template<typename UT = float, typename VT = vec2<UT> >
-class pathfinder : public sdl_app{
+class pathfinder : public app_class{
 public:
 	
 	typedef typename topo_template<UT, VT>::unit_type unit_type;
@@ -36,7 +36,11 @@ public:
 		STATUS_FAILED
 	};
 	
-	pathfinder(compare_func_type cf, node_type* sn = NULL, node_type* en = NULL);
+	static bool default_compare(const unit_type& lhs, const unit_type& rhs);
+	static unit_type default_heuristic(node_type* lhs, node_type* rhs);
+	
+	pathfinder(compare_func_type cf = default_compare, 
+			node_type* sn = NULL, node_type* en = NULL);
 	virtual void draw();
 	virtual STATUS get_status() const;
 	virtual bool done() const;
@@ -53,6 +57,8 @@ protected:
 	virtual void reinit_state();
 	virtual bool process_step_init();
 	virtual bool process_step_working();
+	virtual void process_genpath(link_type* ltp);
+	virtual void update_cum_costs(node_type* ntp);	//recursive
 	
 	class closed_type{
 	public:
@@ -91,6 +97,7 @@ protected:
 	node_type* end_node;
 	
 	heuristic_func_type heuristic_function;
+	compare_wrapper my_compare_wrapper;
 	
 	STATUS status;
 	
@@ -98,25 +105,43 @@ protected:
 };
 
 template<typename UT, typename VT>
+bool pathfinder<UT, VT>::default_compare(
+		const pathfinder<UT, VT>::unit_type& lhs, 
+		const pathfinder<UT, VT>::unit_type& rhs){
+	return lhs < rhs;
+}
+template<typename UT, typename VT>
+typename pathfinder<UT, VT>::unit_type pathfinder<UT, VT>::default_heuristic(
+		pathfinder<UT, VT>::node_type* lhs, 
+		pathfinder<UT, VT>::node_type* rhs){
+	return (lhs->get_position() - rhs->get_position()).abs();
+}
+template<typename UT, typename VT>
 pathfinder<UT, VT>::pathfinder(
 		pathfinder<UT, VT>::compare_func_type cf, 
 		pathfinder<UT, VT>::node_type* sn, 
 		pathfinder<UT, VT>::node_type* en) : 
 		open_set(compare_wrapper(cf)), 
 		start_node(sn), end_node(en), 
-		heuristic_function(NULL), 
+		heuristic_function(default_heuristic), 
+		my_compare_wrapper(cf), 
 		status(STATUS_INIT), render_radius(0.05f){}
 template<typename UT, typename VT>
 void pathfinder<UT, VT>::draw(){
 	for(typename closed_set_type::iterator it = closed_set.begin(); 
 			it != closed_set.end(); 
 			++it){
-		glColor4f(0.f, 0.f, 1.f, 1.f);
 		typename closed_set_type::value_type cstvt = *it;
 		link_type* ltp = cstvt.second.dest_path;
 		vec2f pos = ltp->get_to()->get_position();
 		vec2f ppos = ltp->get_from()->get_position();
-		draw_circle(pos, get_render_radius());
+		if(ltp->get_to() == get_start())
+			glColor4f(0.f, 1.f, 0.f, 1.f);
+		else if(ltp->get_to() == get_end())
+			glColor4f(1.f, 0.f, 0.f, 1.f);
+		else
+			glColor4f(0.f, 0.f, 1.f, 1.f);
+		get_my_app()->draw_circle(pos, get_render_radius());
 		glColor4f(0.f, 0.f, 1.f, 0.5f);
 		glBegin(GL_LINES);
 		glVertex2f(pos.x, pos.y);
@@ -222,7 +247,56 @@ bool pathfinder<UT, VT>::process_step_init(){
 }
 template<typename UT, typename VT>
 bool pathfinder<UT, VT>::process_step_working(){
-	return false;
+	if(open_set.empty()){
+		/* No more nodes to check and we didn't find destination */
+		return false;
+	}
+	open_type ot = open_set.top();
+	open_set.pop();
+	if(ot.dest_node == get_end()){
+		/* We have found the destination */
+		process_genpath(ot.dest_path);
+		return false;
+	}
+	typename closed_set_type::iterator iter = closed_set.find(ot.dest_node);
+	if(iter != closed_set.end()){
+		/* We have been here before, is this path better? */
+		if(my_compare_wrapper(ot.cum_cost, iter->second.cum_cost)){
+			
+			iter->second = ot;	//record the better path
+		}
+	}
+	return true;
+}
+template<typename UT, typename VT>
+void pathfinder<UT, VT>::process_genpath(pathfinder<UT, VT>::link_type* ltp){
+	while(ltp){
+		final_path.push_front(ltp);
+		ltp = closed_set.find(ltp->get_from())->second.dest_path;
+	}
+}
+template<typename UT, typename VT>
+void pathfinder<UT, VT>::update_cum_costs(pathfinder<UT, VT>::node_type* ntp){
+	typename closed_set_type::iterator iter = closed_set.find(ntp);
+	if(iter == closed_set.end())
+		return;
+	for(typename node_type::iterator it = iter->second.dest_node->outlinks_begin(); 
+			it != iter->second.dest_node->outlinks_end(); 
+			++it){
+		link_type* ltp = *it;
+		typename closed_set_type::iterator iter2 = closed_set.find(ltp->get_to());
+		if(iter2 != closed_set.end()){
+			/* This thing exists in the closed set. Update it and
+			 recursively update its links */
+			unit_type ncc = iter->second.cum_cost + 
+					iter2->second.dest_path->get_cost();
+			if(my_compare_wrapper(ncc, iter2->second.cum_cost)){
+				/* But only if this variant is better than what is there */
+				iter2->second.cum_cost = ncc;
+				update_cum_costs(iter2->second.dest_node);
+			}
+		}
+	}
 }
 
 template<typename UT, typename VT>

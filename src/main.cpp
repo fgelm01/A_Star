@@ -10,10 +10,6 @@
 
 #undef main
 
-template<typename T>
-bool template_less(const T& lhs, const T& rhs){
-	return lhs < rhs;
-}
 
 int main(int argc, char** argv) {
 	
@@ -23,7 +19,8 @@ int main(int argc, char** argv) {
 	topo::grid_graph* gg = new topo::grid_graph(vec2f(-1.f, -1.f), vec2f(spacing, spacing), vec2i(subdivision+1, subdivision+1), 1);
 	app.attach_app(gg);
 	
-	topo::pathfinder<> pf(template_less<topo::pathfinder<>::unit_type >, NULL, NULL);
+	topo::pathfinder<>* pf = new topo::pathfinder<>();
+	app.attach_app(pf);
 	
 	return app.my_main(argc, argv);
 	
