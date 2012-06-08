@@ -26,7 +26,8 @@ public:
 	typedef typename topo_template<UT, VT>::vector_type vector_type;
 	typedef typename topo_template<UT, VT>::node_type node_type;
 	typedef typename topo_template<UT, VT>::link_type link_type;
-	typedef bool (*compare_func_type)(const unit_type& l, const unit_type& r);
+	typedef bool (*compare_func_type)(const unit_type& lhs, const unit_type& rhs);
+	typedef unit_type (*heuristic_func_type)(node_type* lhs, node_type* rhs );
 	
 	enum STATUS{
 		STATUS_INIT,
@@ -45,9 +46,13 @@ public:
 	virtual void set_end(node_type* en);	//also reinitializes state
 	virtual float get_render_radius() const;
 	virtual void set_render_radius(float rr);
+	virtual void set_heuristic(heuristic_func_type hft);
+	virtual bool process_step();
 protected:
-		
+	
 	virtual void reinit_state();
+	virtual bool process_step_init();
+	virtual bool process_step_working();
 	
 	class closed_type{
 	public:
@@ -85,6 +90,8 @@ protected:
 	node_type* start_node;
 	node_type* end_node;
 	
+	heuristic_func_type heuristic_function;
+	
 	STATUS status;
 	
 	float render_radius;
@@ -97,6 +104,7 @@ pathfinder<UT, VT>::pathfinder(
 		pathfinder<UT, VT>::node_type* en) : 
 		open_set(compare_wrapper(cf)), 
 		start_node(sn), end_node(en), 
+		heuristic_function(NULL), 
 		status(STATUS_INIT), render_radius(0.05f){}
 template<typename UT, typename VT>
 void pathfinder<UT, VT>::draw(){
@@ -166,12 +174,55 @@ float pathfinder<UT, VT>::get_render_radius() const{
 	return render_radius;
 }
 template<typename UT, typename VT>
+void pathfinder<UT, VT>::set_heuristic(
+		pathfinder<UT, VT>::heuristic_func_type hft){
+	heuristic_function = hft;
+}
+template<typename UT, typename VT>
+bool pathfinder<UT, VT>::process_step(){
+	switch(get_status()){
+	case STATUS_INIT:
+		return process_step_init();
+		break;
+	case STATUS_WORKING:
+		return process_step_working();
+		break;
+	case STATUS_FINISHED:
+	case STATUS_FAILED:
+		return false;
+	default:
+		return false;
+	}
+}
+template<typename UT, typename VT>
 void pathfinder<UT, VT>::reinit_state(){
 	status = STATUS_INIT;
 	while(!open_set.empty())
 		open_set.pop();
 	closed_set.clear();
 	final_path.clear();
+}
+template<typename UT, typename VT>
+bool pathfinder<UT, VT>::process_step_init(){
+	/* Put the start node in the closed set */
+	closed_type ct(get_start(), NULL, unit_type());
+	closed_set.insert(std::pair<node_type* , closed_type>(ct.dest_node, ct));
+	/* Put the nodes it links to in the open set */
+	for(typename node_type::iterator it = ct.dest_node->outlinks_begin(); 
+			it != ct.dest_node->outlinks_end(); 
+			++it){
+		link_type* ltp = *it;
+		node_type* ntp = ltp->get_to();
+		open_type ot(ntp, ltp, ltp->get_cost(), 
+				heuristic_function(ntp, get_end()));
+		open_set.push(ot);
+	}
+	status = STATUS_WORKING;
+	return true;
+}
+template<typename UT, typename VT>
+bool pathfinder<UT, VT>::process_step_working(){
+	return false;
 }
 
 template<typename UT, typename VT>
