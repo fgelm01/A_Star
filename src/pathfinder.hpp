@@ -78,11 +78,19 @@ protected:
 	class compare_wrapper{
 	public:
 		compare_wrapper(compare_func_type cf);
-		bool operator()(const unit_type& lhs, const unit_type& rhs) const;
-		bool operator()(const closed_type& lhs, const closed_type& rhs) const;
-		bool operator()(const open_type& lhs, const open_type& rhs) const;
+		virtual bool operator()(const unit_type& lhs, const unit_type& rhs) const;
+		virtual bool operator()(const closed_type& lhs, const closed_type& rhs) const;
+		virtual bool operator()(const open_type& lhs, const open_type& rhs) const;
 	protected:
 		compare_func_type compare_func;
+	};
+	
+	class compare_wrapper_reverse : public compare_wrapper{
+	public:
+		compare_wrapper_reverse(compare_func_type cf);
+		virtual bool operator()(const unit_type& lhs, const unit_type& rhs) const;
+		virtual bool operator()(const closed_type& lhs, const closed_type& rhs) const;
+		virtual bool operator()(const open_type& lhs, const open_type& rhs) const;
 	};
 	
 	typedef std::map<node_type*, closed_type> closed_set_type;
@@ -121,7 +129,7 @@ pathfinder<UT, VT>::pathfinder(
 		pathfinder<UT, VT>::compare_func_type cf, 
 		pathfinder<UT, VT>::node_type* sn, 
 		pathfinder<UT, VT>::node_type* en) : 
-		open_set(compare_wrapper(cf)), 
+		open_set(compare_wrapper_reverse(cf)), 
 		start_node(sn), end_node(en), 
 		heuristic_function(default_heuristic), 
 		my_compare_wrapper(cf), 
@@ -353,7 +361,27 @@ bool pathfinder<UT, VT>::compare_wrapper::operator ()(
 			lhs.cum_cost + lhs.heur_cost, 
 			rhs.cum_cost + rhs.heur_cost);
 }
-
+template<typename UT, typename VT>
+pathfinder<UT, VT>::compare_wrapper_reverse::compare_wrapper_reverse(
+		pathfinder<UT, VT>::compare_func_type cf) : compare_wrapper(cf) {}
+template<typename UT, typename VT>
+bool pathfinder<UT, VT>::compare_wrapper_reverse::operator ()(
+		const pathfinder<UT, VT>::unit_type& lhs, 
+		const pathfinder<UT, VT>::unit_type& rhs) const{
+	return compare_wrapper::operator ()(rhs, lhs);
+}
+template<typename UT, typename VT>
+bool pathfinder<UT, VT>::compare_wrapper_reverse::operator ()(
+		const pathfinder<UT, VT>::closed_type& lhs, 
+		const pathfinder<UT, VT>::closed_type& rhs) const{
+	return compare_wrapper::operator ()(rhs, lhs);
+}
+template<typename UT, typename VT>
+bool pathfinder<UT, VT>::compare_wrapper_reverse::operator ()(
+		const pathfinder<UT, VT>::open_type& lhs, 
+		const pathfinder<UT, VT>::open_type& rhs) const{
+	return compare_wrapper::operator ()(rhs, lhs);
+}
 
 }
 
