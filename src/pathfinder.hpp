@@ -264,6 +264,19 @@ bool pathfinder<UT, VT>::process_step_working(){
 		if(my_compare_wrapper(ot.cum_cost, iter->second.cum_cost)){
 			
 			iter->second = ot;	//record the better path
+			update_cum_costs(iter->second.dest_node);
+		}
+	} else {
+		/* We have not been here before, add to closed set, and add links to
+		 open set */
+		closed_set.insert(std::pair<node_type*, closed_type>(ot.dest_node, ot));
+		for(typename node_type::iterator itn = ot.dest_node->outlinks_begin(); 
+				itn != ot.dest_node->outlinks_end(); 
+				++itn){
+			link_type* ltp = *itn;
+			open_type otn(ltp->get_to(), ltp, ot.cum_cost + ltp->get_cost(), 
+					heuristic_function(ltp->get_to(), get_end()));
+			open_set.push(otn);
 		}
 	}
 	return true;
