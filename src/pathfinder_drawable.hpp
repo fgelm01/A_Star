@@ -15,6 +15,14 @@ namespace topo {
 template<typename UT = float, typename VT = vec2<UT> >
 class pathfinder_drawable : public pathfinder<UT, VT>, public app_class{
 public:
+	
+	typedef typename pathfinder<UT, VT>::unit_type unit_type;
+	typedef typename pathfinder<UT, VT>::vector_type vector_type;
+	typedef typename pathfinder<UT, VT>::node_type node_type;
+	typedef typename pathfinder<UT, VT>::link_type link_type;
+	typedef typename pathfinder<UT, VT>::compare_func_type compare_func_type;
+	typedef typename pathfinder<UT, VT>::heuristic_func_type heuristic_func_type;
+	
 	pathfinder_drawable(
 			typename pathfinder<UT, VT>::compare_func_type cf = 
 			pathfinder<UT, VT>::default_compare, 
@@ -29,19 +37,19 @@ protected:
 
 template<typename UT, typename VT>
 pathfinder_drawable<UT, VT>::pathfinder_drawable(
-		typename pathfinder<UT, VT>::compare_func_type cf, 
-		typename pathfinder<UT, VT>::node_type* sn, 
-		typename pathfinder<UT, VT>::node_type* en) : 
+		typename pathfinder_drawable<UT, VT>::compare_func_type cf, 
+		typename pathfinder_drawable<UT, VT>::node_type* sn, 
+		typename pathfinder_drawable<UT, VT>::node_type* en) : 
 		pathfinder<UT, VT>(cf, sn, en), render_radius(0.05f) {}
 
 template<typename UT, typename VT>
 void pathfinder_drawable<UT, VT>::draw(){
-	for(typename pathfinder<UT, VT>::closed_set_type::iterator it = 
+	for(typename pathfinder_drawable<UT, VT>::closed_set_type::iterator it = 
 			pathfinder<UT, VT>::closed_set.begin(); 
 			it != pathfinder<UT, VT>::closed_set.end(); 
 			++it){
-		typename pathfinder<UT, VT>::closed_set_type::value_type cstvt = *it;
-		typename pathfinder<UT, VT>::link_type* ltp = cstvt.second.dest_path;
+		typename pathfinder_drawable<UT, VT>::closed_set_type::value_type cstvt = *it;
+		typename pathfinder_drawable<UT, VT>::link_type* ltp = cstvt.second.dest_path;
 		vec2f pos = ltp->get_to()->get_position();
 		vec2f ppos = ltp->get_from()->get_position();
 		if(ltp->get_to() == pathfinder<UT, VT>::get_start())
@@ -60,11 +68,11 @@ void pathfinder_drawable<UT, VT>::draw(){
 	if(pathfinder<UT, VT>::done()){
 		glColor4f(1.f, 1.f, 0.f, 0.5f);
 		glBegin(GL_LINES);
-		for(typename pathfinder<UT, VT>::final_path_type::iterator it = 
+		for(typename pathfinder_drawable<UT, VT>::final_path_type::iterator it = 
 				pathfinder<UT, VT>::final_path.begin();
 				it != pathfinder<UT, VT>::final_path.end();
 				++it){
-			typename pathfinder<UT, VT>::final_path_type::value_type ltp = *it;
+			typename pathfinder_drawable<UT, VT>::final_path_type::value_type ltp = *it;
 			vec2f pos = ltp->get_to()->get_position();
 			vec2f ppos = ltp->get_from()->get_position();
 			glVertex2f(pos.x, pos.y);
