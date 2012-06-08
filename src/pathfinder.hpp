@@ -19,7 +19,7 @@
 namespace topo{
 
 template<typename UT = float, typename VT = vec2<UT> >
-class pathfinder : public app_class{
+class pathfinder{
 public:
 	
 	typedef typename topo_template<UT, VT>::unit_type unit_type;
@@ -41,15 +41,12 @@ public:
 	
 	pathfinder(compare_func_type cf = default_compare, 
 			node_type* sn = NULL, node_type* en = NULL);
-	virtual void draw();
 	virtual STATUS get_status() const;
 	virtual bool done() const;
 	virtual node_type* get_start() const;
 	virtual node_type* get_end() const;
 	virtual void set_start(node_type* sn);	//also reinitializes state
 	virtual void set_end(node_type* en);	//also reinitializes state
-	virtual float get_render_radius() const;
-	virtual void set_render_radius(float rr);
 	virtual void set_heuristic(heuristic_func_type hft);
 	virtual bool process_step();
 protected:
@@ -108,8 +105,6 @@ protected:
 	compare_wrapper my_compare_wrapper;
 	
 	STATUS status;
-	
-	float render_radius;
 };
 
 template<typename UT, typename VT>
@@ -133,45 +128,7 @@ pathfinder<UT, VT>::pathfinder(
 		start_node(sn), end_node(en), 
 		heuristic_function(default_heuristic), 
 		my_compare_wrapper(cf), 
-		status(STATUS_INIT), render_radius(0.05f){}
-template<typename UT, typename VT>
-void pathfinder<UT, VT>::draw(){
-	for(typename closed_set_type::iterator it = closed_set.begin(); 
-			it != closed_set.end(); 
-			++it){
-		typename closed_set_type::value_type cstvt = *it;
-		link_type* ltp = cstvt.second.dest_path;
-		vec2f pos = ltp->get_to()->get_position();
-		vec2f ppos = ltp->get_from()->get_position();
-		if(ltp->get_to() == get_start())
-			glColor4f(0.f, 1.f, 0.f, 1.f);
-		else if(ltp->get_to() == get_end())
-			glColor4f(1.f, 0.f, 0.f, 1.f);
-		else
-			glColor4f(0.f, 0.f, 1.f, 1.f);
-		get_my_app()->draw_circle(pos, get_render_radius());
-		glColor4f(0.f, 0.f, 1.f, 0.5f);
-		glBegin(GL_LINES);
-		glVertex2f(pos.x, pos.y);
-		glVertex2f(ppos.x, ppos.y);
-		glEnd();
-	}
-	if(done()){
-		glColor4f(1.f, 1.f, 0.f, 0.5f);
-		glBegin(GL_LINES);
-		for(typename final_path_type::iterator it = final_path.begin();
-				it != final_path.end();
-				++it){
-			typename final_path_type::value_type ltp = *it;
-			vec2f pos = ltp->get_to()->get_position();
-			vec2f ppos = ltp->get_from()->get_position();
-			glVertex2f(pos.x, pos.y);
-			glVertex2f(ppos.x, ppos.y);
-		}
-		glEnd();
-	}
-	glColor4f(1.f, 1.f, 1.f, 1.f);
-}
+		status(STATUS_INIT){}
 template<typename UT, typename VT>
 typename pathfinder<UT, VT>::STATUS pathfinder<UT, VT>::get_status() const{
 	return status;
@@ -197,14 +154,6 @@ template<typename UT, typename VT>
 void pathfinder<UT, VT>::set_end(pathfinder<UT, VT>::node_type* en){
 	end_node = en;
 	reinit_state();
-}
-template<typename UT, typename VT>
-void pathfinder<UT, VT>::set_render_radius(float rr){
-	render_radius = rr;
-}
-template<typename UT, typename VT>
-float pathfinder<UT, VT>::get_render_radius() const{
-	return render_radius;
 }
 template<typename UT, typename VT>
 void pathfinder<UT, VT>::set_heuristic(

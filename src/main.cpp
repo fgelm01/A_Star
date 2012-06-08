@@ -6,7 +6,7 @@
  */
 
 #include "grid_graph.hpp"
-#include "pathfinder.hpp"
+#include "pathfinder_drawable.hpp"
 
 #undef main
 
@@ -19,7 +19,8 @@ int main(int argc, char** argv) {
 	topo::grid_graph* gg = new topo::grid_graph(vec2f(-1.f, -1.f), vec2f(spacing, spacing), vec2i(subdivision+1, subdivision+1), 1);
 	app.attach_app(gg);
 	
-	topo::pathfinder<>* pf = new topo::pathfinder<>();
+	topo::pathfinder_drawable<>* pf = new topo::pathfinder_drawable<>(
+			topo::pathfinder<>::default_compare);
 	app.attach_app(pf);
 	
 	return app.my_main(argc, argv);

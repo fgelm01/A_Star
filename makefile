@@ -15,7 +15,8 @@ EXEDIR=bin
 
 #header file list
 _HEADERS=grid_graph.hpp topology.hpp sdl_app.hpp vec2.hpp vec2.hpp \
-include_important_things.hpp pathfinder.hpp
+include_important_things.hpp pathfinder.hpp pathfinder_drawable.hpp \
+
 HEADERS=$(patsubst %,$(HEDDIR)/%,$(_HEADERS))
 
 #source file list
