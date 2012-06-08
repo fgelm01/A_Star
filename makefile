@@ -33,9 +33,11 @@ EXECUTABLE=$(patsubst %,$(EXEDIR)/%,$(_EXECUTABLE))
 #rules
 
 $(EXECUTABLE): $(OBJECTS)
+	test -d $(EXEDIR) || mkdir $(EXEDIR)
 	$(CXX) $(LDFLAGS) $(OBJECTS) -o $@ $(LIBS)
 
 $(OBJDIR)/%.o: $(SRCDIR)/%.cpp $(HEADERS)
+	test -d $(OBJDIR) || mkdir $(OBJDIR)
 	$(CXX) $(LDFLAGS) $(CFLAGS) -o $@ $<
 
 clean:
