@@ -59,7 +59,9 @@ protected:
 	
 	class closed_type{
 	public:
-		closed_type(node_type* dn, link_type* dp, unit_type cc);
+		closed_type(node_type* dn = NULL, 
+				link_type* dp = NULL,
+				unit_type cc = unit_type());
 		virtual ~closed_type();
 		node_type* dest_node;	/* we have already arrived to this node */
 		link_type* dest_path;	/* the link by which we got here */
@@ -68,7 +70,10 @@ protected:
 	
 	class open_type : public closed_type{
 	public:
-		open_type(node_type* dn, link_type* dp, unit_type cc, unit_type hc);
+		open_type(node_type* dn = NULL, 
+				link_type* dp = NULL, 
+				unit_type cc = unit_type(), 
+				unit_type hc = unit_type());
 		unit_type heur_cost;
 	};
 	

@@ -16,6 +16,7 @@ grid_graph::grid_graph(vec2f orig, vec2f bs, vec2i bc, int layers){
 	my_origin = orig;
 	my_blocksize = bs;
 	basic_init();
+	set_render_radius(my_blocksize.abs() / 4.f);
 }
 grid_graph::~grid_graph() {
 	delete [] graph_array;
@@ -59,13 +60,25 @@ node& grid_graph::access(vec2i xy){
 const node& grid_graph::access(vec2i xy) const{
 	return graph_array[xy.y * sizexy.x + xy.x];
 }
+node& grid_graph::access(vec2f xy){
+	vec2f maxxy = my_origin + my_blocksize * sizexy;
+	xy.x = std::min(std::max(my_origin.x, xy.x), maxxy.x);
+	xy.y = std::min(std::max(my_origin.y, xy.y), maxxy.y);
+	return access(vec2i(xy/my_blocksize));
+}
+const node& grid_graph::access(vec2f xy) const{
+	vec2f maxxy = my_origin + my_blocksize * sizexy;
+	xy.x = std::min(std::max(my_origin.x, xy.x), maxxy.x);
+	xy.y = std::min(std::max(my_origin.y, xy.y), maxxy.y);
+	return access(vec2i(xy/my_blocksize));
+}
 
 void grid_graph::draw(){
 	const node::unit_type zval = -0.005f;
 	for(int i = 0; i < sizexy.x * sizexy.y; ++i){
 		node& n = graph_array[i];
 		glColor4f(1.f, 1.f, 1.f, 0.8f);
-		get_my_app()->draw_circle(n.get_position(), my_blocksize.abs()/4.f);
+		get_my_app()->draw_circle(n.get_position(), get_render_radius());
 		glColor4f(1.f, 1.f, 1.f, 0.5f);
 		glBegin(GL_LINES);
 		for(node::iterator it = n.outlinks_begin(); it != n.outlinks_end(); ++it){
@@ -76,6 +89,12 @@ void grid_graph::draw(){
 		glEnd();
 		glColor4f(1.f, 1.f, 1.f, 1.0f);
 	}
+}
+float grid_graph::get_render_radius() const{
+	return render_radius;
+}
+void grid_graph::set_render_radius(float rr){
+	render_radius = rr;
 }
 
 

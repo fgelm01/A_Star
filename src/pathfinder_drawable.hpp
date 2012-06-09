@@ -16,22 +16,29 @@ template<typename UT = float, typename VT = vec2<UT> >
 class pathfinder_drawable : public pathfinder<UT, VT>, public app_class{
 public:
 	
-	typedef typename pathfinder<UT, VT>::unit_type unit_type;
-	typedef typename pathfinder<UT, VT>::vector_type vector_type;
-	typedef typename pathfinder<UT, VT>::node_type node_type;
-	typedef typename pathfinder<UT, VT>::link_type link_type;
-	typedef typename pathfinder<UT, VT>::compare_func_type compare_func_type;
-	typedef typename pathfinder<UT, VT>::heuristic_func_type heuristic_func_type;
+	typedef pathfinder<UT, VT> parent_class;
+	
+	typedef typename parent_class::unit_type unit_type;
+	typedef typename parent_class::vector_type vector_type;
+	typedef typename parent_class::node_type node_type;
+	typedef typename parent_class::link_type link_type;
+	typedef typename parent_class::compare_func_type compare_func_type;
+	typedef typename parent_class::heuristic_func_type heuristic_func_type;
 	
 	pathfinder_drawable(
-			typename pathfinder<UT, VT>::compare_func_type cf = 
+			compare_func_type cf = 
 			pathfinder<UT, VT>::default_compare, 
-			typename pathfinder<UT, VT>::node_type* sn = NULL, 
-			typename pathfinder<UT, VT>::node_type* en = NULL);
+			node_type* sn = NULL, 
+			node_type* en = NULL);
 	virtual void draw();
 	virtual float get_render_radius() const;
 	virtual void set_render_radius(float rr);
 protected:
+	
+	typedef typename parent_class::closed_set_type closed_set_type;
+	typedef typename parent_class::open_set_type open_set_type;
+	typedef typename parent_class::final_path_type final_path_type;
+	
 	float render_radius;
 };
 
@@ -44,35 +51,44 @@ pathfinder_drawable<UT, VT>::pathfinder_drawable(
 
 template<typename UT, typename VT>
 void pathfinder_drawable<UT, VT>::draw(){
+	if(parent_class::get_start()){
+		glColor4f(0.f, 1.f, 0.f, 1.f);
+		get_my_app()->draw_circle(parent_class::get_start()->get_position(), get_render_radius());
+	}
+	if(parent_class::get_end()){
+		glColor4f(1.f, 0.f, 0.f, 1.f);
+		get_my_app()->draw_circle(parent_class::get_end()->get_position(), get_render_radius());
+	}
 	for(typename pathfinder_drawable<UT, VT>::closed_set_type::iterator it = 
 			pathfinder<UT, VT>::closed_set.begin(); 
 			it != pathfinder<UT, VT>::closed_set.end(); 
 			++it){
-		typename pathfinder_drawable<UT, VT>::closed_set_type::value_type cstvt = *it;
-		typename pathfinder_drawable<UT, VT>::link_type* ltp = cstvt.second.dest_path;
-		vec2f pos = ltp->get_to()->get_position();
-		vec2f ppos = ltp->get_from()->get_position();
-		if(ltp->get_to() == pathfinder<UT, VT>::get_start())
-			glColor4f(0.f, 1.f, 0.f, 1.f);
-		else if(ltp->get_to() == pathfinder<UT, VT>::get_end())
-			glColor4f(1.f, 0.f, 0.f, 1.f);
-		else
-			glColor4f(0.f, 0.f, 1.f, 1.f);
-		get_my_app()->draw_circle(pos, get_render_radius());
-		glColor4f(0.f, 0.f, 1.f, 0.5f);
-		glBegin(GL_LINES);
-		glVertex2f(pos.x, pos.y);
-		glVertex2f(ppos.x, ppos.y);
-		glEnd();
+		typename closed_set_type::value_type cstvt = *it;
+		link_type* ltp = cstvt.second.dest_path;
+		if(ltp){
+			vec2f pos = ltp->get_to()->get_position();
+			vec2f ppos = ltp->get_from()->get_position();
+			if(ltp->get_to() == parent_class::get_start() || 
+					ltp->get_to() == parent_class::get_end())
+				glColor4f(0.f, 0.f, 0.f, 0.f);
+			else
+				glColor4f(0.f, 0.f, 1.f, 1.f);
+			get_my_app()->draw_circle(pos, get_render_radius());
+			glColor4f(0.f, 0.f, 1.f, 0.5f);
+			glBegin(GL_LINES);
+			glVertex2f(pos.x, pos.y);
+			glVertex2f(ppos.x, ppos.y);
+			glEnd();
+		}
 	}
 	if(pathfinder<UT, VT>::done()){
 		glColor4f(1.f, 1.f, 0.f, 0.5f);
 		glBegin(GL_LINES);
-		for(typename pathfinder_drawable<UT, VT>::final_path_type::iterator it = 
+		for(typename final_path_type::iterator it = 
 				pathfinder<UT, VT>::final_path.begin();
 				it != pathfinder<UT, VT>::final_path.end();
 				++it){
-			typename pathfinder_drawable<UT, VT>::final_path_type::value_type ltp = *it;
+			typename final_path_type::value_type ltp = *it;
 			vec2f pos = ltp->get_to()->get_position();
 			vec2f ppos = ltp->get_from()->get_position();
 			glVertex2f(pos.x, pos.y);

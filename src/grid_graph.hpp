@@ -20,10 +20,14 @@ public:
 	virtual ~grid_graph();
 	virtual vec2i size() const;
 	virtual int layers() const;
-	virtual node& access(vec2i xy);
+	virtual node& access(vec2i xy);	//dumb, can be out of bounds
 	virtual const node& access(vec2i xy) const;
+	virtual node& access(vec2f xy);	//smart, will clamp to edge
+	virtual const node& access(vec2f xy) const;
+	virtual float get_render_radius() const;
+	virtual void set_render_radius(float rr);
 	
-	void draw();
+	virtual void draw();
 	
 	
 	enum GRID_CONNECT{
@@ -47,6 +51,8 @@ protected:
 	vec2i sizexy;
 	int sizez;
 	node* graph_array;
+	
+	float render_radius;
 private:
 	grid_graph(const grid_graph& orig);
 	grid_graph& operator=(const grid_graph& orig);

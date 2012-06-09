@@ -21,6 +21,7 @@ int main(int argc, char** argv) {
 	
 	topo::pathfinder_drawable<>* pf = new topo::pathfinder_drawable<>(
 			topo::pathfinder<>::default_compare);
+	pf->set_render_radius(gg->get_render_radius());
 	app.attach_app(pf);
 	
 	return app.my_main(argc, argv);
