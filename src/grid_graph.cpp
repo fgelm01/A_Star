@@ -54,6 +54,18 @@ void grid_graph::connection_init(GRID_CONNECT gc){
 		}
 	}
 }
+float grid_graph::cost_to_alpha(node::unit_type ut){
+	return 0.5f / (1.f + ut);
+}
+vec2i grid_graph::coord_to_index(vec2f xy) const{
+	xy -= my_origin;
+	xy /= my_blocksize;
+	xy += vec2f(0.5f, 0.5f);
+	vec2i xyi(xy);
+	xyi.x = std::min(std::max(0, xyi.x), sizexy.x - 1);
+	xyi.y = std::min(std::max(0, xyi.y), sizexy.y - 1);
+	return xyi;
+}
 node& grid_graph::access(vec2i xy){
 	return graph_array[xy.y * sizexy.x + xy.x];
 }
@@ -61,16 +73,10 @@ const node& grid_graph::access(vec2i xy) const{
 	return graph_array[xy.y * sizexy.x + xy.x];
 }
 node& grid_graph::access(vec2f xy){
-	vec2f maxxy = my_origin + my_blocksize * sizexy;
-	xy.x = std::min(std::max(my_origin.x, xy.x), maxxy.x);
-	xy.y = std::min(std::max(my_origin.y, xy.y), maxxy.y);
-	return access(vec2i(xy/my_blocksize));
+	return access(coord_to_index(xy));
 }
 const node& grid_graph::access(vec2f xy) const{
-	vec2f maxxy = my_origin + my_blocksize * sizexy;
-	xy.x = std::min(std::max(my_origin.x, xy.x), maxxy.x);
-	xy.y = std::min(std::max(my_origin.y, xy.y), maxxy.y);
-	return access(vec2i(xy/my_blocksize));
+	return access(coord_to_index(xy));
 }
 
 void grid_graph::draw(){
@@ -79,10 +85,10 @@ void grid_graph::draw(){
 		node& n = graph_array[i];
 		glColor4f(1.f, 1.f, 1.f, 0.8f);
 		get_my_app()->draw_circle(n.get_position(), get_render_radius());
-		glColor4f(1.f, 1.f, 1.f, 0.5f);
 		glBegin(GL_LINES);
 		for(node::iterator it = n.outlinks_begin(); it != n.outlinks_end(); ++it){
 			node::link_type* l = *it;
+			glColor4f(1.f, 1.f, 1.f, cost_to_alpha(l->get_cost()));
 			glVertex3f(l->get_from()->get_position().x, l->get_from()->get_position().y, zval);
 			glVertex3f(l->get_to()->get_position().x, l->get_to()->get_position().y, zval);
 		}

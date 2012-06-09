@@ -13,15 +13,14 @@
 
 int main(int argc, char** argv) {
 	
-	int subdivision = 48;
+	int subdivision = 12;
 	float spacing = 2.f/subdivision;
 	sdl_app app;
 	topo::grid_graph* gg = new topo::grid_graph(vec2f(-1.f, -1.f), vec2f(spacing, spacing), vec2i(subdivision+1, subdivision+1), 1);
 	app.attach_app(gg);
 	
-	topo::pathfinder_drawable<>* pf = new topo::pathfinder_drawable<>(
-			topo::pathfinder<>::default_compare);
-	pf->set_render_radius(gg->get_render_radius());
+	topo::pathfinder_drawable<>* pf = new topo::pathfinder_drawable<>();
+	pf->set_graph(gg);
 	app.attach_app(pf);
 	
 	return app.my_main(argc, argv);

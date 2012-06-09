@@ -11,7 +11,7 @@
 #include "topology.hpp"
 #include "sdl_app.hpp"
 
-#include <queue>
+#include <set>
 #include <vector>
 #include <map>
 #include <list>
@@ -37,6 +37,7 @@ public:
 	};
 	
 	static bool default_compare(const unit_type& lhs, const unit_type& rhs);
+	static bool inverse_compare(const unit_type& lhs, const unit_type& rhs);
 	static unit_type default_heuristic(node_type* lhs, node_type* rhs);
 	
 	pathfinder(compare_func_type cf = default_compare, 
@@ -87,16 +88,8 @@ protected:
 		compare_func_type compare_func;
 	};
 	
-	class compare_wrapper_reverse : public compare_wrapper{
-	public:
-		compare_wrapper_reverse(compare_func_type cf);
-		virtual bool operator()(const unit_type& lhs, const unit_type& rhs) const;
-		virtual bool operator()(const closed_type& lhs, const closed_type& rhs) const;
-		virtual bool operator()(const open_type& lhs, const open_type& rhs) const;
-	};
-	
 	typedef std::map<node_type*, closed_type> closed_set_type;
-	typedef std::priority_queue<open_type, std::vector<open_type>, compare_wrapper> open_set_type;
+	typedef std::set<open_type, compare_wrapper> open_set_type;
 	typedef std::list<link_type*> final_path_type;
 	
 	closed_set_type closed_set;
@@ -119,6 +112,12 @@ bool pathfinder<UT, VT>::default_compare(
 	return lhs < rhs;
 }
 template<typename UT, typename VT>
+bool pathfinder<UT, VT>::inverse_compare(
+		const pathfinder<UT, VT>::unit_type& lhs, 
+		const pathfinder<UT, VT>::unit_type& rhs){
+	return !default_compare(lhs, rhs);
+}
+template<typename UT, typename VT>
 typename pathfinder<UT, VT>::unit_type pathfinder<UT, VT>::default_heuristic(
 		pathfinder<UT, VT>::node_type* lhs, 
 		pathfinder<UT, VT>::node_type* rhs){
@@ -129,7 +128,7 @@ pathfinder<UT, VT>::pathfinder(
 		pathfinder<UT, VT>::compare_func_type cf, 
 		pathfinder<UT, VT>::node_type* sn, 
 		pathfinder<UT, VT>::node_type* en) : 
-		open_set(compare_wrapper_reverse(cf)), 
+		open_set(compare_wrapper(cf)), 
 		start_node(sn), end_node(en), 
 		heuristic_function(default_heuristic), 
 		my_compare_wrapper(cf), 
@@ -184,14 +183,15 @@ bool pathfinder<UT, VT>::process_step(){
 template<typename UT, typename VT>
 void pathfinder<UT, VT>::reinit_state(){
 	status = STATUS_INIT;
-	while(!open_set.empty())
-		open_set.pop();
+	open_set.clear();
 	closed_set.clear();
 	final_path.clear();
 }
 template<typename UT, typename VT>
 bool pathfinder<UT, VT>::process_step_init(){
 	/* Put the start node in the closed set */
+	if(!get_start() || !get_end())
+		return false;
 	closed_type ct(get_start(), NULL, unit_type());
 	closed_set.insert(std::pair<node_type* , closed_type>(ct.dest_node, ct));
 	/* Put the nodes it links to in the open set */
@@ -202,7 +202,7 @@ bool pathfinder<UT, VT>::process_step_init(){
 		node_type* ntp = ltp->get_to();
 		open_type ot(ntp, ltp, ltp->get_cost(), 
 				heuristic_function(ntp, get_end()));
-		open_set.push(ot);
+		open_set.insert(ot);
 	}
 	status = STATUS_WORKING;
 	return true;
@@ -213,11 +213,12 @@ bool pathfinder<UT, VT>::process_step_working(){
 		/* No more nodes to check and we didn't find destination */
 		return false;
 	}
-	open_type ot = open_set.top();
-	open_set.pop();
+	open_type ot = *open_set.begin();
+	open_set.erase(open_set.begin());
 	if(ot.dest_node == get_end()){
 		/* We have found the destination */
 		process_genpath(ot.dest_path);
+		status = STATUS_FINISHED;
 		return false;
 	}
 	typename closed_set_type::iterator iter = closed_set.find(ot.dest_node);
@@ -236,9 +237,15 @@ bool pathfinder<UT, VT>::process_step_working(){
 				itn != ot.dest_node->outlinks_end(); 
 				++itn){
 			link_type* ltp = *itn;
+			typename closed_set_type::iterator itero = closed_set.find(ltp->get_to());
+			if(itero != closed_set.end()){
+				/* We have been here before, don't add to open set */
+				update_cum_costs(itero->second.dest_node);
+				continue;
+			}
 			open_type otn(ltp->get_to(), ltp, ot.cum_cost + ltp->get_cost(), 
 					heuristic_function(ltp->get_to(), get_end()));
-			open_set.push(otn);
+			open_set.insert(otn);
 		}
 	}
 	return true;
@@ -263,12 +270,16 @@ void pathfinder<UT, VT>::update_cum_costs(pathfinder<UT, VT>::node_type* ntp){
 		if(iter2 != closed_set.end()){
 			/* This thing exists in the closed set. Update it and
 			 recursively update its links */
-			unit_type ncc = iter->second.cum_cost + 
-					iter2->second.dest_path->get_cost();
-			if(my_compare_wrapper(ncc, iter2->second.cum_cost)){
+			closed_type& ctr = iter->second;
+			closed_type& ctr2 = iter2->second;
+			unit_type ncc = ctr2.cum_cost;
+			if(ctr2.dest_path)
+				ncc = ctr.cum_cost + 
+					ctr2.dest_path->get_cost();
+			if(my_compare_wrapper(ncc, ctr2.cum_cost)){
 				/* But only if this variant is better than what is there */
 				iter2->second.cum_cost = ncc;
-				update_cum_costs(iter2->second.dest_node);
+				update_cum_costs(ctr2.dest_node);
 			}
 		}
 	}
@@ -314,27 +325,6 @@ bool pathfinder<UT, VT>::compare_wrapper::operator ()(
 	return compare_func(
 			lhs.cum_cost + lhs.heur_cost, 
 			rhs.cum_cost + rhs.heur_cost);
-}
-template<typename UT, typename VT>
-pathfinder<UT, VT>::compare_wrapper_reverse::compare_wrapper_reverse(
-		pathfinder<UT, VT>::compare_func_type cf) : compare_wrapper(cf) {}
-template<typename UT, typename VT>
-bool pathfinder<UT, VT>::compare_wrapper_reverse::operator ()(
-		const pathfinder<UT, VT>::unit_type& lhs, 
-		const pathfinder<UT, VT>::unit_type& rhs) const{
-	return compare_wrapper::operator ()(rhs, lhs);
-}
-template<typename UT, typename VT>
-bool pathfinder<UT, VT>::compare_wrapper_reverse::operator ()(
-		const pathfinder<UT, VT>::closed_type& lhs, 
-		const pathfinder<UT, VT>::closed_type& rhs) const{
-	return compare_wrapper::operator ()(rhs, lhs);
-}
-template<typename UT, typename VT>
-bool pathfinder<UT, VT>::compare_wrapper_reverse::operator ()(
-		const pathfinder<UT, VT>::open_type& lhs, 
-		const pathfinder<UT, VT>::open_type& rhs) const{
-	return compare_wrapper::operator ()(rhs, lhs);
 }
 
 }

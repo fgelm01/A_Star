@@ -20,8 +20,6 @@ public:
 	virtual ~grid_graph();
 	virtual vec2i size() const;
 	virtual int layers() const;
-	virtual node& access(vec2i xy);	//dumb, can be out of bounds
-	virtual const node& access(vec2i xy) const;
 	virtual node& access(vec2f xy);	//smart, will clamp to edge
 	virtual const node& access(vec2f xy) const;
 	virtual float get_render_radius() const;
@@ -44,6 +42,11 @@ protected:
 	
 	virtual void basic_init();
 	virtual void connection_init(GRID_CONNECT gc = GRID_ALL);
+	virtual float cost_to_alpha(node::unit_type ut);
+	virtual vec2i coord_to_index(vec2f xy) const;
+	
+	virtual node& access(vec2i xy);	//dumb, can be out of bounds
+	virtual const node& access(vec2i xy) const;
 	
 	vec2f my_origin;
 	vec2f my_blocksize;

@@ -58,6 +58,7 @@ int sdl_app::init(){
 	my_window_size.x = 640;
 	my_window_size.y = 480;
 	my_window_ratio = float(my_window_size.x)/my_window_size.y;
+	SDL_EnableKeyRepeat(SDL_DEFAULT_REPEAT_DELAY, SDL_DEFAULT_REPEAT_INTERVAL);
 	return 0;
 }
 void sdl_app::init_GL(int w, int h){
