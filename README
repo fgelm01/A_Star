@@ -1,4 +1,28 @@
 # A Star
 
 ## Overview 
-This is a dummy README file
+A flexible templated A Star search algorithm with a simple SDL based user 
+interface. Currently it is set to use a reverse comparison, giving the worst
+path from start to end instead of the best. Under most circumstances, it will 
+visit every node at most once before arriving at the destination. The path will 
+generally not self-intersect but this is not guaranteed. When intersections do 
+occur, they tend to be kept to a minimum.
+
+### Controls for GUI
+ - Mouse movement - controls on which node operation is performed
+ - A - select start node (green)
+ - Z - select end node (red) - should not be start node
+ - Space - perform one iteration of A Star
+ - Enter - run algorithm to completion (success or failure)
+
+### Benefits
+Minimal assumptions are made about the position representation and distance or 
+cost types. Both the cost comparison and heuristic can be provided as function 
+pointers, and modified at runtime.
+
+Current limitations:
+ - Link cost, heuristic cost, and path cost are all of the same type
+ - The provided default comparison and heuristic functions assume this:
+  - The cost type can be treated like a numeric primitive
+  - The position (vector) type supports the same interface as in vec2.hpp
+  - To overcome these limits, provide your own heuristic and comparison

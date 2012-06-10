@@ -6,16 +6,18 @@
  */
 
 #include "grid_graph.hpp"
+#include "pathfinder.hpp"
 
 namespace topo{
 
-grid_graph::grid_graph(vec2f orig, vec2f bs, vec2i bc, int layers){
+grid_graph::grid_graph(vec2f orig, vec2f bs, vec2i bc, 
+		GRID_CONNECT gc, int layers){
 	sizexy = bc;
 	sizez = layers;
 	graph_array = new node[sizexy.x * sizexy.y * sizez];
 	my_origin = orig;
 	my_blocksize = bs;
-	basic_init();
+	basic_init(gc);
 	set_render_radius(my_blocksize.abs() / 4.f);
 }
 grid_graph::~grid_graph() {
@@ -27,13 +29,13 @@ vec2i grid_graph::size() const{
 int grid_graph::layers() const{
 	return sizez;
 }
-void grid_graph::basic_init(){
+void grid_graph::basic_init(grid_graph::GRID_CONNECT gc){
 	for(vec2i xy(0,0); xy.y < sizexy.y; ++xy.y){
 		for(xy.x = 0; xy.x < sizexy.x; ++xy.x){
 			access(xy).set_position(my_origin + node::vector_type(xy) * my_blocksize);
 		}
 	}
-	connection_init();
+	connection_init(gc);
 }
 void grid_graph::connection_init(GRID_CONNECT gc){
 	for(vec2i xy(0,0); xy.y < sizexy.y; ++xy.y){
@@ -43,10 +45,20 @@ void grid_graph::connection_init(GRID_CONNECT gc){
 			node& a = access(xy);
 			for(vec2i xy2(minxy); xy2.y < maxxy.y; ++xy2.y){
 				for(xy2.x = minxy.x; xy2.x < maxxy.x; ++xy2.x){
+					vec2i diagtest = xy2-xy;
 					if(xy2==xy)
 						continue;
+					if(xy2.x == xy.x && !(gc&GRID_HORIZ))
+						continue;
+					if(xy2.y == xy.y && !(gc&GRID_VERT))
+						continue;
+					if(diagtest.x == diagtest.y && !(gc&GRID_DIAG_FSLASH))
+						continue;
+					if(diagtest.x == -diagtest.y && !(gc&GRID_DIAG_BSLASH))
+						continue;
 					node& b = access(xy2);
-					node::unit_type cost = (b.get_position() - a.get_position()).abs();
+					node::unit_type cost = 
+							pathfinder<node::unit_type, node::vector_type>::default_heuristic(&a, &b);
 					a.connect(&b, cost);
 					b.connect(&a, cost);
 				}

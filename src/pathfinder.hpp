@@ -225,7 +225,6 @@ bool pathfinder<UT, VT>::process_step_working(){
 	if(iter != closed_set.end()){
 		/* We have been here before, is this path better? */
 		if(my_compare_wrapper(ot.cum_cost, iter->second.cum_cost)){
-			
 			iter->second = ot;	//record the better path
 			update_cum_costs(iter->second.dest_node);
 		}
@@ -239,8 +238,10 @@ bool pathfinder<UT, VT>::process_step_working(){
 			link_type* ltp = *itn;
 			typename closed_set_type::iterator itero = closed_set.find(ltp->get_to());
 			if(itero != closed_set.end()){
-				/* We have been here before, don't add to open set */
-				update_cum_costs(itero->second.dest_node);
+				/* We have been here before, update if better */
+				if(my_compare_wrapper(ot.cum_cost + ltp->get_cost(), 
+						itero->second.cum_cost))
+					update_cum_costs(itero->second.dest_node);
 				continue;
 			}
 			open_type otn(ltp->get_to(), ltp, ot.cum_cost + ltp->get_cost(), 
@@ -262,26 +263,16 @@ void pathfinder<UT, VT>::update_cum_costs(pathfinder<UT, VT>::node_type* ntp){
 	typename closed_set_type::iterator iter = closed_set.find(ntp);
 	if(iter == closed_set.end())
 		return;
-	for(typename node_type::iterator it = iter->second.dest_node->outlinks_begin(); 
-			it != iter->second.dest_node->outlinks_end(); 
-			++it){
-		link_type* ltp = *it;
-		typename closed_set_type::iterator iter2 = closed_set.find(ltp->get_to());
-		if(iter2 != closed_set.end()){
-			/* This thing exists in the closed set. Update it and
-			 recursively update its links */
-			closed_type& ctr = iter->second;
-			closed_type& ctr2 = iter2->second;
-			unit_type ncc = ctr2.cum_cost;
-			if(ctr2.dest_path)
-				ncc = ctr.cum_cost + 
-					ctr2.dest_path->get_cost();
-			if(my_compare_wrapper(ncc, ctr2.cum_cost)){
-				/* But only if this variant is better than what is there */
-				iter2->second.cum_cost = ncc;
-				update_cum_costs(ctr2.dest_node);
-			}
-		}
+	closed_type& ctr = iter->second;
+	for(typename node_type::iterator iter2 = ctr.dest_node->outlinks_begin(); 
+			iter2 != ctr.dest_node->outlinks_end();
+			++iter2){
+		link_type* ltp = *iter2;
+		if(ltp->get_to() == ntp)
+			continue;
+		open_type ot(ltp->get_to(), ltp, ctr.cum_cost + ltp->get_cost(), 
+				heuristic_function(ltp->get_to(), get_end()));
+		//open_set.insert(ot);
 	}
 }
 

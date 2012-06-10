@@ -15,18 +15,6 @@ namespace topo {
 
 class grid_graph : public app_class {
 public:
-	grid_graph(vec2f orig = vec2f(0.f, 0.f), vec2f bs = vec2f(1.f, 1.f), vec2i bc = vec2i(4, 4), 
-			int layers = 1);
-	virtual ~grid_graph();
-	virtual vec2i size() const;
-	virtual int layers() const;
-	virtual node& access(vec2f xy);	//smart, will clamp to edge
-	virtual const node& access(vec2f xy) const;
-	virtual float get_render_radius() const;
-	virtual void set_render_radius(float rr);
-	
-	virtual void draw();
-	
 	
 	enum GRID_CONNECT{
 		GRID_NONE = 0,
@@ -38,9 +26,23 @@ public:
 		GRID_DIAG_X = 12,
 		GRID_ALL = 15
 	};
+	
+	grid_graph(vec2f orig = vec2f(0.f, 0.f), vec2f bs = vec2f(1.f, 1.f), 
+			vec2i bc = vec2i(4, 4), GRID_CONNECT gc = GRID_ALL,
+			int layers = 1);
+	virtual ~grid_graph();
+	virtual vec2i size() const;
+	virtual int layers() const;
+	virtual node& access(vec2f xy);	//smart, will clamp to edge
+	virtual const node& access(vec2f xy) const;
+	virtual float get_render_radius() const;
+	virtual void set_render_radius(float rr);
+	
+	virtual void draw();
+	
 protected:
 	
-	virtual void basic_init();
+	virtual void basic_init(GRID_CONNECT gc = GRID_ALL);
 	virtual void connection_init(GRID_CONNECT gc = GRID_ALL);
 	virtual float cost_to_alpha(node::unit_type ut);
 	virtual vec2i coord_to_index(vec2f xy) const;

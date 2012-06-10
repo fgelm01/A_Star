@@ -73,51 +73,52 @@ void pathfinder_drawable<UT, VT>::draw(){
 		get_my_app()->draw_circle(parent_class::get_end()->get_position(), 
 				get_render_radius() * RADIUS_MARKED);
 	}
-	for(typename pathfinder_drawable<UT, VT>::closed_set_type::iterator it = 
-			pathfinder<UT, VT>::closed_set.begin(); 
-			it != pathfinder<UT, VT>::closed_set.end(); 
-			++it){
-		typename closed_set_type::value_type cstvt = *it;
-		link_type* ltp = cstvt.second.dest_path;
-		if(ltp){
-			vec2f pos = ltp->get_to()->get_position();
-			vec2f ppos = ltp->get_from()->get_position();
-			if(ltp->get_to() == parent_class::get_start() || 
-					ltp->get_to() == parent_class::get_end())
-				glColor4f(0.f, 0.f, 0.f, 0.f);
-			else
-				glColor4f(1.f, 0.f, 1.f, 1.f);
-			get_my_app()->draw_circle(pos, get_render_radius() * RADIUS_CLOSED);
-			glColor4f(1.f, 0.f, 1.f, 0.5f);
-			glBegin(GL_LINES);
-			glVertex2f(pos.x, pos.y);
-			glVertex2f(ppos.x, ppos.y);
-			glEnd();
+	if(!parent_class::done()){
+		for(typename pathfinder_drawable<UT, VT>::closed_set_type::iterator it = 
+				pathfinder<UT, VT>::closed_set.begin(); 
+				it != pathfinder<UT, VT>::closed_set.end(); 
+				++it){
+			typename closed_set_type::value_type cstvt = *it;
+			link_type* ltp = cstvt.second.dest_path;
+			if(ltp){
+				vec2f pos = ltp->get_to()->get_position();
+				vec2f ppos = ltp->get_from()->get_position();
+				if(ltp->get_to() == parent_class::get_start() || 
+						ltp->get_to() == parent_class::get_end())
+					glColor4f(0.f, 0.f, 0.f, 0.f);
+				else
+					glColor4f(1.f, 0.f, 1.f, 1.f);
+				get_my_app()->draw_circle(pos, get_render_radius() * RADIUS_CLOSED);
+				glColor4f(1.f, 0.f, 1.f, 0.5f);
+				glBegin(GL_LINES);
+				glVertex2f(pos.x, pos.y);
+				glVertex2f(ppos.x, ppos.y);
+				glEnd();
+			}
 		}
-	}
-	for(typename pathfinder_drawable<UT, VT>::open_set_type::iterator it = 
-			parent_class::open_set.begin(); 
-			it != parent_class::open_set.end(); 
-			++it){
-		typename open_set_type::value_type ostvt = *it;
-		link_type* ltp = ostvt.dest_path;
-		if(ltp){
-			vec2f pos = ltp->get_to()->get_position();
-			vec2f ppos = ltp->get_from()->get_position();
-			if(ltp->get_to() == parent_class::get_start() || 
-					ltp->get_to() == parent_class::get_end())
-				glColor4f(0.f, 0.f, 0.f, 0.f);
-			else
-				glColor4f(0.f, 1.f, 1.f, 1.f);
-			get_my_app()->draw_circle(pos, get_render_radius() * RADIUS_OPEN);
-			glColor4f(0.f, 1.f, 1.f, 0.5f);
-			glBegin(GL_LINES);
-			glVertex2f(pos.x, pos.y);
-			glVertex2f(ppos.x, ppos.y);
-			glEnd();
+		for(typename pathfinder_drawable<UT, VT>::open_set_type::iterator it = 
+				parent_class::open_set.begin(); 
+				it != parent_class::open_set.end(); 
+				++it){
+			typename open_set_type::value_type ostvt = *it;
+			link_type* ltp = ostvt.dest_path;
+			if(ltp){
+				vec2f pos = ltp->get_to()->get_position();
+				vec2f ppos = ltp->get_from()->get_position();
+				if(ltp->get_to() == parent_class::get_start() || 
+						ltp->get_to() == parent_class::get_end())
+					glColor4f(0.f, 0.f, 0.f, 0.f);
+				else
+					glColor4f(0.f, 1.f, 1.f, 1.f);
+				get_my_app()->draw_circle(pos, get_render_radius() * RADIUS_OPEN);
+				glColor4f(0.f, 1.f, 1.f, 0.5f);
+				glBegin(GL_LINES);
+				glVertex2f(pos.x, pos.y);
+				glVertex2f(ppos.x, ppos.y);
+				glEnd();
+			}
 		}
-	}
-	if(pathfinder<UT, VT>::done()){
+	} else {
 		glColor4f(1.f, 1.f, 0.f, 1.f);
 		glBegin(GL_LINES);
 		for(typename final_path_type::iterator it = 
@@ -147,6 +148,8 @@ void pathfinder_drawable<UT, VT>::process_event(SDL_Event& event){
 						get_my_app()->get_mouse())));
 			else if(event.key.keysym.sym == SDLK_SPACE)
 				parent_class::process_step();
+			else if(event.key.keysym.sym == SDLK_RETURN)
+				while(parent_class::process_step());
 		}
 	}
 }
