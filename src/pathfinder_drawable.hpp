@@ -26,6 +26,11 @@ public:
 	typedef typename parent_class::compare_func_type compare_func_type;
 	typedef typename parent_class::heuristic_func_type heuristic_func_type;
 	
+	static unit_type heur_sqrt(node_type* lhs, node_type* rhs);
+	static unit_type heur_pow2(node_type* lhs, node_type* rhs);
+	static unit_type heur_octa(node_type* lhs, node_type* rhs);
+	static unit_type heur_orth(node_type* lhs, node_type* rhs);
+	
 	pathfinder_drawable(
 			compare_func_type cf = 
 			pathfinder<UT, VT>::default_compare, 
@@ -51,6 +56,47 @@ protected:
 	float render_radius;
 	grid_graph* my_graph;
 };
+
+template<typename UT, typename VT>
+typename pathfinder_drawable<UT, VT>::unit_type 
+		pathfinder_drawable<UT, VT>::heur_sqrt(
+		typename pathfinder_drawable<UT, VT>::node_type* lhs, 
+		typename pathfinder_drawable<UT, VT>::node_type* rhs){
+	unit_type ut = parent_class::default_heuristic(lhs, rhs);
+	return sqrt(ut);
+}
+template<typename UT, typename VT>
+typename pathfinder_drawable<UT, VT>::unit_type 
+		pathfinder_drawable<UT, VT>::heur_pow2(
+		typename pathfinder_drawable<UT, VT>::node_type* lhs, 
+		typename pathfinder_drawable<UT, VT>::node_type* rhs){
+	unit_type ut = parent_class::default_heuristic(lhs, rhs);
+	return ut * ut;
+}
+template<typename UT, typename VT>
+typename pathfinder_drawable<UT, VT>::unit_type 
+		pathfinder_drawable<UT, VT>::heur_orth(
+		typename pathfinder_drawable<UT, VT>::node_type* lhs, 
+		typename pathfinder_drawable<UT, VT>::node_type* rhs){
+	vector_type lpos = lhs->get_position();
+	vector_type rpos = rhs->get_position();
+	vector_type diff = rpos - lpos;
+	return fabs(diff.x) + fabs(diff.y);
+}
+template<typename UT, typename VT>
+typename pathfinder_drawable<UT, VT>::unit_type 
+		pathfinder_drawable<UT, VT>::heur_octa(
+		typename pathfinder_drawable<UT, VT>::node_type* lhs, 
+		typename pathfinder_drawable<UT, VT>::node_type* rhs){
+	vector_type lpos = lhs->get_position();
+	vector_type rpos = rhs->get_position();
+	vector_type diff = rpos - lpos;
+	diff.x = fabs(diff.x);
+	diff.y = fabs(diff.y);
+	unit_type big_axis = std::max(diff.x, diff.y);
+	unit_type small_axis = std::min(diff.x, diff.y);
+	return big_axis - small_axis + sqrt(2.0) * small_axis;
+}
 
 template<typename UT, typename VT>
 pathfinder_drawable<UT, VT>::pathfinder_drawable(
@@ -140,16 +186,48 @@ template<typename UT, typename VT>
 void pathfinder_drawable<UT, VT>::process_event(SDL_Event& event){
 	if(event.type == SDL_KEYDOWN){
 		if(get_graph()){
-			if(event.key.keysym.sym == SDLK_a)
+			switch(event.key.keysym.sym){
+			case SDLK_a:
 				parent_class::set_start(&(get_graph()->access(
 						get_my_app()->get_mouse())));
-			else if(event.key.keysym.sym == SDLK_z)
+				break;
+			case SDLK_z:
 				parent_class::set_end(&(get_graph()->access(
 						get_my_app()->get_mouse())));
-			else if(event.key.keysym.sym == SDLK_SPACE)
+				break;
+			case SDLK_SPACE:
 				parent_class::process_step();
-			else if(event.key.keysym.sym == SDLK_RETURN)
+				break;
+			case SDLK_RETURN:
 				while(parent_class::process_step());
+				break;
+			default:
+				break;
+			}
+		}
+		switch(event.key.keysym.sym){
+		case SDLK_0:	//default heuristic
+			parent_class::set_heuristic(parent_class::default_heuristic);
+			std::cout << "Set linear distance heuristic" << std::endl;
+			break;
+		case SDLK_1:	//square root
+			parent_class::set_heuristic(heur_sqrt);
+			std::cout << "Set square root heuristic" << std::endl;
+			break;
+		case SDLK_2:	//square
+			parent_class::set_heuristic(heur_pow2);
+			std::cout << "Set square heuristic" << std::endl;
+			break;
+		case SDLK_3:	//eight directions
+			parent_class::set_heuristic(heur_octa);
+			std::cout << "Set eight direction heuristic" << std::endl;
+			break;
+		case SDLK_4:	//ortho
+			parent_class::set_heuristic(heur_orth);
+			std::cout << "Set four direction heuristic" << std::endl;
+			break;
+		default:
+			break;
 		}
 	}
 }

@@ -163,6 +163,7 @@ template<typename UT, typename VT>
 void pathfinder<UT, VT>::set_heuristic(
 		pathfinder<UT, VT>::heuristic_func_type hft){
 	heuristic_function = hft;
+	reinit_state();
 }
 template<typename UT, typename VT>
 bool pathfinder<UT, VT>::process_step(){
